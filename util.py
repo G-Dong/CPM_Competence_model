@@ -14,12 +14,12 @@ def read_xlsx_xlrd(path, cell):
     cell_list = first_sheet.row_slice(rowx=cell[0], start_colx=cell[1], end_colx = cell[2])
     cell_array = np.asarray(cell_list)
     cell_string = ''.join(map(str, cell_array))
+    # eliminate all other redundant simbol
     tmp = cell_string.replace('text:\'', '')
+    tmp = tmp.replace('text:\"', '')
+    tmp = tmp.replace('"', '')
     cell_final = tmp.replace('\'', '')
     return cell_final
 
 
-if __name__ == '__main__':
-    path = ('Data/Competency model 2 dimensional.xlsx')
-    cell = [3, 1, 2]
-    print((read_xlsx_xlrd(path, cell)))
+
