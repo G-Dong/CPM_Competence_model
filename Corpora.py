@@ -1,3 +1,8 @@
+'''
+Might be used:
+We choose simple WORDNET to find synonyms and anyonyms by using NLTK
+'''
+
 from gensim import corpora, models, similarities
 from util import read_xlsx_xlrd
 import logging
@@ -8,6 +13,7 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 class Build_Corpora(object):
     def __init__(self):
         self.documents = list()
+        self.texts = list()
 
     def add(self, source):
         self.documents.append(str(source))
@@ -15,7 +21,7 @@ class Build_Corpora(object):
 
     # remove common words and tokenize
     def clean(self):
-        stop_list = set('for a of the and to in is'.split())
+        stop_list = set('for a of the and to in is with'.split())
         self.texts = [[word for word in self.documents.lower().split() if word not in stop_list]
                       for self.documents in self.documents]
         # remove words that appear only once
@@ -31,12 +37,21 @@ class Build_Corpora(object):
                       for text in self.texts]
         return self.texts
 
-    def dictionary(self):
+    def dictionary(self, path):
         dictionary = corpora.Dictionary(self.texts)
-       # dictionary.save(path)
+        dictionary.save(path)
+        print(dictionary)
+        print(dictionary.token2id)
         return dictionary
-       # print(dictionary)
-       # print(dictionary.token2id)
+
+    def corpus(self, path):
+        corpus = [dictionary.doc2bow(text) for text in self.texts]
+        corpora.MmCorpus.serialize(path, corpus)  # store to disk, for later use
+        print(corpus)
+        return corpus
+
+    def save_dictionary(self, path):
+        pass
 
 
 if __name__ == '__main__':
@@ -51,15 +66,29 @@ if __name__ == '__main__':
     for i in range(3, 32):
         cell_negative = [i, 3, 4] # col: D
         documents_compe_negative = bc_negative.add(read_xlsx_xlrd(path, cell_negative))
-    print(bc_negative.clean())
-    print(bc_positive.clean())
-   # bc_positive.save_dictionary('configure/positive.dict')
-    dictionary = bc_positive.dictionary()
-    new_doc = 'Flexibility Dealing with paradox'
-    new_vec = dictionary.doc2bow(new_doc.lower().split())
-    print(new_vec)
+    # print(bc_negative.clean())
+    # print(bc_positive.clean())
+    # bc_positive.save_dictionary('configure/positive.dict')
+    bc_positive.clean()
+    bc_negative.clean()
+    dictionary = bc_positive.dictionary('configure/positive.dict')
+    new_doc = 'can lead a team to successes'
+    vec_bow = dictionary.doc2bow(new_doc.lower().split())
+    # print(new_vec)
+    corpus = bc_positive.corpus('configure/positive.mm')
+    # tfidf = models.TfidfModel(corpus)
+    # corpus_tfidf = tfidf[corpus]
+    '''Train the model using LDA'''
+    lda = models.LdaModel(corpus, id2word=dictionary, num_topics=100)
+    corpus_lda = lda[corpus]
+   # for doc in corpus_lda:
+   #     print(doc)
 
+    '''Send similarity queries'''
 
-
-
+    #lda.print_topics(100)
+    vec_lda = lda[vec_bow]
+    index = similarities.MatrixSimilarity(corpus_lda)
+    sims = index[vec_lda]
+    print(list(enumerate(sims)))
     #print(documents_compe_negative)
