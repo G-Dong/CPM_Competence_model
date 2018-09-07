@@ -18,6 +18,8 @@ def read_xlsx_xlrd(path, cell):
     tmp = cell_string.replace('text:\'', '')
     tmp = tmp.replace('text:\"', '')
     tmp = tmp.replace('"', '')
+    tmp = tmp.replace(',', '')
+    tmp = tmp.replace('.', '')
     cell_final = tmp.replace('\'', '')
     return cell_final
 

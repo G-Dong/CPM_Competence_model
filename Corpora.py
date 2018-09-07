@@ -7,6 +7,7 @@ from gensim import corpora, models, similarities
 from util import read_xlsx_xlrd
 import logging
 from pprint import pprint
+import spacy
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 
@@ -19,12 +20,23 @@ class Build_Corpora(object):
         self.documents.append(str(source))
         return self.documents
 
+    def word_filter(self, string):
+        nlp = spacy.load('en')
+        doc = nlp(string)
+        result = list()
+        for i, token in enumerate(doc):
+            if token.pos_ in ('NOUN', 'PROPN', 'VERB', 'ADJ'):
+                #print(doc[i])
+                result.append(doc[i])
+        #print(result)
+        return result
     # remove common words and tokenize
     def clean(self):
         stop_list = set('for a of the and to in is with'.split())
         self.texts = [[word for word in self.documents.lower().split() if word not in stop_list]
                       for self.documents in self.documents]
         # remove words that appear only once
+        #pprint(self.texts)
         return self.texts
 
     def remove_once_word(self):
@@ -40,14 +52,14 @@ class Build_Corpora(object):
     def dictionary(self, path):
         dictionary = corpora.Dictionary(self.texts)
         dictionary.save(path)
-        print(dictionary)
-        print(dictionary.token2id)
+        #print(dictionary)
+        #print(dictionary.token2id)
         return dictionary
 
     def corpus(self, path):
         corpus = [dictionary.doc2bow(text) for text in self.texts]
         corpora.MmCorpus.serialize(path, corpus)  # store to disk, for later use
-        print(corpus)
+       # print(corpus)
         return corpus
 
     def save_dictionary(self, path):
@@ -58,6 +70,7 @@ if __name__ == '__main__':
     path = ('Data/Competency model 2 dimensional.xlsx')
     bc_positive = Build_Corpora()
     # build positive competency model corpora
+
     for i in range(3, 32):
         cell_positive = [i, 1, 2] # col: B
         documents_compe_positive = bc_positive.add(read_xlsx_xlrd(path, cell_positive))
@@ -66,13 +79,37 @@ if __name__ == '__main__':
     for i in range(3, 32):
         cell_negative = [i, 3, 4] # col: D
         documents_compe_negative = bc_negative.add(read_xlsx_xlrd(path, cell_negative))
+
+
+        """
+        add word filter here.
+        """
+
+
+    # for i in range(3, 32):
+    #     cell_positive = [i, 1, 2]  # col: B
+    #     tmp = bc_positive.word_filter(read_xlsx_xlrd(path, cell_positive))
+    #     #print(tmp)
+    #     #documents_compe_positive = bc_positive.add(tmp)
+    #     documents_compe_positive_raw = ''.join(bc_positive.add(tmp))
+    #     tmp = documents_compe_positive_raw.replace(',', '')
+    #     tmp = tmp.replace('[', '')
+    #     tmp = tmp.replace(']', ' ')
+    # #print(tmp.split())
+    # documents_compe_positive = tmp.split()
+
+
+    print(documents_compe_positive)
+
     # print(bc_negative.clean())
-    # print(bc_positive.clean())
-    # bc_positive.save_dictionary('configure/positive.dict')
+   # print(bc_positive.clean())
     bc_positive.clean()
-    bc_negative.clean()
+    # bc_positive.save_dictionary('configure/positive.dict')
+    #bc_positive.word_filter()
+    # bc_negative.remove_once_word()
+    # bc_negative.clean()
     dictionary = bc_positive.dictionary('configure/positive.dict')
-    new_doc = 'can lead a team to successes'
+    new_doc = 'Aims high and shows energy and drive	Career ambition and Perseverance'
     vec_bow = dictionary.doc2bow(new_doc.lower().split())
     # print(new_vec)
     corpus = bc_positive.corpus('configure/positive.mm')
@@ -90,5 +127,6 @@ if __name__ == '__main__':
     vec_lda = lda[vec_bow]
     index = similarities.MatrixSimilarity(corpus_lda)
     sims = index[vec_lda]
+
     print(list(enumerate(sims)))
     #print(documents_compe_negative)
