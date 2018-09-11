@@ -4,10 +4,18 @@ We choose simple WORDNET to find synonyms and anyonyms by using NLTK
 '''
 
 from gensim import corpora, models, similarities
-from util import read_xlsx_xlrd
+from util import read_xlsx_xlrd, read_csv, read_csv_tag
 import logging
 from pprint import pprint
 import spacy
+import string
+from string import punctuation
+import os
+import re
+import nltk
+from nltk.stem import SnowballStemmer
+from nltk.corpus import stopwords
+import numpy as np
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 
@@ -33,11 +41,13 @@ class Build_Corpora(object):
     # remove common words and tokenize
     def clean(self):
         stop_list = set('for a of the and to in is with'.split())
-        self.texts = [[word for word in self.documents.lower().split() if word not in stop_list]
+        self.texts = [[word for word in self.documents.lower().split()]
                       for self.documents in self.documents]
         # remove words that appear only once
         #pprint(self.texts)
         return self.texts
+
+
 
     def remove_once_word(self):
         from collections import defaultdict
@@ -66,40 +76,93 @@ class Build_Corpora(object):
         pass
 
 
+### Text Normalizing function. Part of the following function was taken from this link.
+def clean_text(text):
+    ## Remove puncuation
+    text = text.translate(string.punctuation)
+
+    ## Convert words to lower case and split them
+    text = text.lower().split()
+
+    ## Remove stop words
+    stops = set(stopwords.words("english"))
+    text = [w for w in text if not w in stops and len(w) >= 3]
+
+    text = " ".join(text)
+    ## Clean the text
+    text = re.sub(r"[^A-Za-z0-9^,!.\/'+-=]", " ", text)
+    text = re.sub(r"what's", "what is ", text)
+    text = re.sub(r"\'s", " ", text)
+    text = re.sub(r"\'ve", " have ", text)
+    text = re.sub(r"n't", " not ", text)
+    text = re.sub(r"i'm", "i am ", text)
+    text = re.sub(r"\'re", " are ", text)
+    text = re.sub(r"\'d", " would ", text)
+    text = re.sub(r"\'ll", " will ", text)
+    text = re.sub(r",", " ", text)
+    text = re.sub(r"\.", " ", text)
+    text = re.sub(r"!", " ! ", text)
+    text = re.sub(r"\/", " ", text)
+    text = re.sub(r"\^", " ^ ", text)
+    text = re.sub(r"\+", " + ", text)
+    text = re.sub(r"\-", " - ", text)
+    text = re.sub(r"\=", " = ", text)
+    text = re.sub(r"'", " ", text)
+    text = re.sub(r"(\d+)(k)", r"\g<1>000", text)
+    text = re.sub(r":", " : ", text)
+    text = re.sub(r" e g ", " eg ", text)
+    text = re.sub(r" b g ", " bg ", text)
+    text = re.sub(r" u s ", " american ", text)
+    text = re.sub(r"\0s", "0", text)
+    text = re.sub(r" 9 11 ", "911", text)
+    text = re.sub(r"e - mail", "email", text)
+    text = re.sub(r"j k", "jk", text)
+    text = re.sub(r"\s{2,}", " ", text)
+    text = re.sub(r"cing", "ce ", text)
+    ## Stemming
+    text = text.split()
+    stemmer = SnowballStemmer('english')
+    stemmed_words = [stemmer.stem(word) for word in text]
+    text = " ".join(stemmed_words)
+    return text
+
 if __name__ == '__main__':
-    path = ('Data/Competency model 2 dimensional.xlsx')
+   # path = ('Data/Competency model 2 dimensional.xlsx')
+    path = 'Data/Competency_model_2_dimensional.csv'
     bc_positive = Build_Corpora()
     # build positive competency model corpora
 
-    for i in range(3, 32):
-        cell_positive = [i, 1, 2] # col: B
-        documents_compe_positive = bc_positive.add(read_xlsx_xlrd(path, cell_positive))
-    bc_negative = Build_Corpora()
-    # build negative competency model corpora
-    for i in range(3, 32):
-        cell_negative = [i, 3, 4] # col: D
-        documents_compe_negative = bc_negative.add(read_xlsx_xlrd(path, cell_negative))
+    # for i in range(29):
+    #     #cell_positive = [i, 1, 2] # col: B
+    #     content_cache = read_csv_tag(path, tag='Skilled')[i]
+    #     #print(content_cache)
+    #     documents_compe_positive = bc_positive.add(content_cache)
+    # print(documents_compe_positive)
 
 
-        """
-        add word filter here.
-        """
+
+    """
+    add word filter here.
+    """
+    for i in range(29):
+        #cell_positive = [i, 1, 2] # col: B
+        content_cache_1 = read_csv_tag(path, tag='Skilled')[i]
+        content_cache_0 = read_csv_tag(path, tag='Competence')[i]
+        content_cache = content_cache_0 + ' ' + content_cache_1
+        print(content_cache)
+        Positive_documents = clean_text(content_cache)
+        print(Positive_documents)
+
+        #documents_compe_positive = bc_positive.add(content_cache)
+        documents_compe_positive = bc_positive.add(Positive_documents)
+    #print(documents_compe_positive)
+
+       # print(Positive_documents)
+    #print(documents_compe_positive)
 
 
-    # for i in range(3, 32):
-    #     cell_positive = [i, 1, 2]  # col: B
-    #     tmp = bc_positive.word_filter(read_xlsx_xlrd(path, cell_positive))
-    #     #print(tmp)
-    #     #documents_compe_positive = bc_positive.add(tmp)
-    #     documents_compe_positive_raw = ''.join(bc_positive.add(tmp))
-    #     tmp = documents_compe_positive_raw.replace(',', '')
-    #     tmp = tmp.replace('[', '')
-    #     tmp = tmp.replace(']', ' ')
-    # #print(tmp.split())
-    # documents_compe_positive = tmp.split()
 
 
-    print(documents_compe_positive)
 
     # print(bc_negative.clean())
    # print(bc_positive.clean())
@@ -109,7 +172,8 @@ if __name__ == '__main__':
     # bc_negative.remove_once_word()
     # bc_negative.clean()
     dictionary = bc_positive.dictionary('configure/positive.dict')
-    new_doc = 'Aims high and shows energy and drive	Career ambition and Perseverance'
+    new_doc = clean_text('Focus on results')
+    print(new_doc)
     vec_bow = dictionary.doc2bow(new_doc.lower().split())
     # print(new_vec)
     corpus = bc_positive.corpus('configure/positive.mm')

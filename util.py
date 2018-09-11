@@ -1,5 +1,6 @@
 import numpy as np
 import xlrd
+import pandas as pd
 from openpyxl import load_workbook
 
 def read_xlsx_xlrd(path, cell):
@@ -24,4 +25,27 @@ def read_xlsx_xlrd(path, cell):
     return cell_final
 
 
+def read_csv(path):
+    source = pd.read_csv(path, encoding = "ISO-8859-1")
+    return source
 
+def read_csv_tag(path, tag):
+    '''
+
+    :param path: directory of csv file
+    :param tag: STR: tag name
+    :return: STR: whole column of that tag
+    '''
+    content = pd.read_csv(path, encoding = "ISO-8859-1")
+    return content[tag]
+
+
+if __name__ == '__main__':
+    path = 'Data/Competency_model_2_dimensional.csv'
+    source = read_csv('Data/Competency_model_2_dimensional.csv')
+    df = pd.read_csv("Data/Competency_model_2_dimensional.csv", encoding="ISO-8859-1")
+    #df_skill_name.columns.values
+    #print(source)
+    content = read_csv_tag(path, tag = 'Skilled')
+    #tmp = df['Competence'][0]
+    print(content[0])
