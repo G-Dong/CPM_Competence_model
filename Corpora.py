@@ -118,7 +118,6 @@ def clean_text(text):
     text = re.sub(r"e - mail", "email", text)
     text = re.sub(r"j k", "jk", text)
     text = re.sub(r"\s{2,}", " ", text)
-    text = re.sub(r"cing", "ce ", text)
     ## Stemming
     text = text.split()
     stemmer = SnowballStemmer('english')
